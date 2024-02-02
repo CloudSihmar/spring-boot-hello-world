@@ -1,0 +1,18 @@
+FROM cloudsihmar/maven:spring
+
+# Sets the home directory for the user to /bin/false. This effectively disables the user's ability to log in.
+RUN groupadd -r dummy && useradd -r -d /bin/false -g dummy dummy
+
+WORKDIR /usr/src/app
+
+RUN chown -R dummy:dummy /usr/src/app
+
+COPY . .
+
+RUN  mvn package && mv target/spring-boot-hello-world-0.0.1-SNAPSHOT.jar app.jar
+
+USER dummy
+
+EXPOSE 8080
+
+ENTRYPOINT ["java", "-jar", "app.jar"]
