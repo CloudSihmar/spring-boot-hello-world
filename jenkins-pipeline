@@ -1,0 +1,52 @@
+pipeline {
+    agent any
+
+    stages {
+        
+        stage('wp') {
+            steps {
+                cleanWs()
+            }
+        }
+        
+        
+        stage('git clone') {
+            steps {
+                git 'https://github.com/CloudSihmar/spring-boot-hello-world.git'
+            }
+        }
+        
+        
+       
+        stage('build') {
+            steps {
+                sh 'docker build -t 685421549691.dkr.ecr.us-east-1.amazonaws.com/sandeep:latest .'
+                echo 'Build image successful'
+            }
+        }
+        
+        
+        stage('Push to ECR') {
+            steps {
+                 withAWS(credentials: 'aws-var', region: 'us-east-1') {
+                  sh 'aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 685421549691.dkr.ecr.us-east-1.amazonaws.com'
+                  sh 'docker push 685421549691.dkr.ecr.us-east-1.amazonaws.com/sandeep:latest'
+                  }
+            }
+        }
+        
+        stage('deploy to the server') {
+            steps {
+                
+                sshagent(['server']) {
+                         sh '''ssh -o StrictHostKeyChecking=no ubuntu@3.80.132.170 sudo docker pull 685421549691.dkr.ecr.us-east-1.amazonaws.com/sandeep:latest
+                               ssh -o StrictHostKeyChecking=no ubuntu@3.80.132.170 sudo docker run -dt --name web -P 685421549691.dkr.ecr.us-east-1.amazonaws.com/sandeep:latest'''
+                         
+            }
+        }
+        
+        }
+        
+        
+    }
+}
